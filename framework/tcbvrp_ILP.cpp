@@ -97,7 +97,7 @@ void tcbvrp_ILP::modelSCF()
 {
 
 	// <decision variables>
-	
+
 	int i,j,k;	// indices
 
 	typedef IloArray<IloBoolVarArray>	BoolVarMatrix;
@@ -142,6 +142,16 @@ void tcbvrp_ILP::modelSCF()
 		}
 	}
 
+
+	/*
+	 * additional (continuous) variables n(i) represent the number of nodes in the tour i
+	 */
+	IloNumVarArray var_n(env,instance.m);
+	for(i=0; i < instance.m; i++)
+	{
+		var_n[i] = IloNumVar(env, Tools::indicesToString( "n_", i).c_str());
+	}
+
 	// </decision variables>
 
 ///////////////////////////////////////////////////////////////
@@ -172,7 +182,7 @@ void tcbvrp_ILP::modelSCF()
 	/*
 	 * Each demand node has to have an outgoing arc which goes to a supply node or the originator
 	 */
-	
+
 	for(j=1; j< instance.n; j++)
 	{
 		if(instance.isDemandNode(j))
@@ -354,16 +364,9 @@ void tcbvrp_ILP::modelSCF()
 		{
 			myExpr8 += var_f[i][0][j];
 		}
+		myExpr9 += var_n[i];
 
-		for(j=0;j<instance.n;j++)
-		{
-			for(k=0; k < instance.n; k++)
-			{
-				myExpr9 += var_t[i][j][k];
-			}
-		}
-
-		model.add(myExpr8 == myExpr9 - 1);
+		model.add(myExpr8 == myExpr9);
 		myExpr8.end();
 		myExpr9.end();
 	}
@@ -378,24 +381,24 @@ void tcbvrp_ILP::modelSCF()
 		{
 			IloExpr incomingExpr(env);
 			IloExpr outgoingExpr(env);
+			IloExpr edgeinExpr(env);
+			IloExpr edgeoutExpr(env);
 			for(k=0; k < instance.n; k++)
 			{
 				if(j!=k)
 				{
 					incomingExpr += var_f[i][k][j];
+					outgoingExpr += var_f[i][j][k];
+					edgeinExpr += var_t[i][k][j];
+					edgeoutExpr += var_t[i][j][k];
 				}
 
 			}
-			for(k=0; k < instance.n; k++)
-			{
-				if(j!=k)
-				{
-					outgoingExpr += var_f[i][j][k];
-				}
-			}
-			model.add(outgoingExpr - incomingExpr == 1.0);
+			model.add(incomingExpr - outgoingExpr == (edgeinExpr + edgeoutExpr)/2);
 			incomingExpr.end();
 			outgoingExpr.end();
+			edgeinExpr.end();
+			edgeoutExpr.end();
 		}
 	}
 
@@ -429,33 +432,20 @@ void tcbvrp_ILP::modelSCF()
 
 	for(i=0;i<instance.m;i++)
 	{
-		IloExpr numHopsInRouteExpr(env);
-
-		for(j=0;j<instance.n;j++)
-		{
-			for(k=0; k < instance.n; k++)
-			{
-				numHopsInRouteExpr += var_t[i][j][k];
-			}
-		}
-
 		for(j=0;j<instance.n;j++)
 		{
 			for(k=0; k < instance.n; k++)
 			{
 				if(j!=k)
 				{
-					IloExpr flowExpr(env);
-					flowExpr += var_f[i][j][k];
-
-					model.add(flowExpr <= (numHopsInRouteExpr-1));
-					flowExpr.end();
+					model.add(var_f[i][j][k] <= instance.n * var_t[i][j][k]);
 				}
 
 			}
 		}
-		numHopsInRouteExpr.end();
 	}
+
+
 	// </SCF>
 	// </constraints>
 }
