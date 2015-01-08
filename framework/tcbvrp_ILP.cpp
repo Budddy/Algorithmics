@@ -268,18 +268,19 @@ void tcbvrp_ILP::modelSCF()
 	IloExpr myExpr3(env);
 	for(i=0;i<instance.m;i++)
 	{
-		IloExpr atLeastOneRouteExpr(env);
+		//IloExpr atLeastOneRouteExpr(env);
 		for(k=0; k < instance.n; k++)
 		{
 			if(instance.isSupplyNode(k))
 			{
 				myExpr3 += var_t[i][0][k];
-				atLeastOneRouteExpr += var_t[i][0][k];
+				//atLeastOneRouteExpr += var_t[i][0][k];
 			}
 		}
-		model.add(atLeastOneRouteExpr > 0);
-		atLeastOneRouteExpr.end();
+		//model.add(atLeastOneRouteExpr > 0);
+		//atLeastOneRouteExpr.end();
 	}
+	model.add(myExpr3 > 0);
 	model.add(myExpr3 <= instance.m);
 	myExpr3.end();
 
