@@ -177,42 +177,29 @@ void tcbvrp_ILP::modelSCF()
 	{
 		if(instance.isDemandNode(j))
 		{
-			IloExpr myExpr(env);
+			IloExpr toSupplyExpr(env);
+			IloExpr notToDemandExpr(env);
 			for(i=0;i<instance.m;i++)
 			{
 				for(k=0; k < instance.n; k++)
 				{
 					if(instance.isSupplyNode(k) || k == 0)
 					{
-						myExpr += var_t[i][j][k];
+						toSupplyExpr += var_t[i][j][k];
+					}
+					else{
+						notToDemandExpr += var_t[i][j][k];
 					}
 				}
 			}
-			model.add(myExpr == 1);
-			myExpr.end();
+			model.add(toSupplyExpr == 1);
+			toSupplyExpr.end();
+
+			model.add(notToDemandExpr == 0);
+			notToDemandExpr.end();
 		}
 	}
 
-	/*
-	 * Each node is not allowed to go to itself
-	 */
-	
-	// for(j=0; j< instance.n; j++)
-	// {
-	// 	if(instance.isDemandNode(j))
-	// 	{
-	// 		IloExpr noSelfExpr(env);
-	// 		for(i=0;i<instance.m;i++)
-	// 		{
-	// 			for(k=1; k < instance.n; k++)
-	// 			{
-	// 					noSelfExpr += var_t[i][j][k];
-	// 			}
-	// 		}
-	// 		model.add(noSelfExpr == 0);
-	// 		noSelfExpr.end();
-	// 	}
-	// }
 
 	/*
 	 * Each supply node can only go to at most one demand node
@@ -240,7 +227,7 @@ void tcbvrp_ILP::modelSCF()
 
 
 	/*
-	 * A supply node is not allowed to go to an other supply node or the originator
+	 * A supply node is not allowed to go to a supply node or the originator
 	 */
 
 	for(j=1; j< instance.n; j++)
@@ -264,19 +251,24 @@ void tcbvrp_ILP::modelSCF()
 	}
 
 	/*
-	 * The originator is not allowed to have more than m outgoing arcs to supply nodes
+	 * The originator is not allowed to have more than m outgoing arcs
+	 * to supply nodes but has at least one for each route
 	 */
 
 	IloExpr myExpr3(env);
 	for(i=0;i<instance.m;i++)
 	{
+		IloExpr atLeastOneRouteExpr(env);
 		for(k=0; k < instance.n; k++)
 		{
 			if(instance.isSupplyNode(k))
 			{
 				myExpr3 += var_t[i][0][k];
+				atLeastOneRouteExpr += var_t[i][0][k];
 			}
 		}
+		model.add(atLeastOneRouteExpr > 0);
+		atLeastOneRouteExpr.end();
 	}
 	model.add(myExpr3 <= instance.m);
 	myExpr3.end();
@@ -357,18 +349,20 @@ void tcbvrp_ILP::modelSCF()
 	{
 		IloExpr myExpr8(env);
 		IloExpr myExpr9(env);
-		for(j=1;j<instance.n;j++)
+
+		for(j=1; j < instance.n; j++)
 		{
 			myExpr8 += var_f[i][0][j];
 		}
+
 		for(j=0;j<instance.n;j++)
 		{
 			for(k=0; k < instance.n; k++)
 			{
 				myExpr9 += var_t[i][j][k];
 			}
-
 		}
+
 		model.add(myExpr8 == myExpr9 - 1);
 		myExpr8.end();
 		myExpr9.end();
@@ -398,18 +392,15 @@ void tcbvrp_ILP::modelSCF()
 				{
 					myExpr11 += var_f[i][j][k];
 				}
-
 			}
-			model.add(myExpr10 - myExpr11 == 1);
+			model.add(myExpr10 - myExpr11 == 1.0);
 			myExpr10.end();
 			myExpr11.end();
-
-
 		}
 	}
 
 	/*
-	 * the flow must be greater than 0 for all routes
+	 * the flow must be greater or equal than 0 for all routes
 	 */
 
 	for(i=0;i<instance.m;i++)
@@ -445,9 +436,7 @@ void tcbvrp_ILP::modelSCF()
 			for(k=0; k < instance.n; k++)
 			{
 				myExpr13 += var_t[i][j][k];
-
 			}
-
 		}
 
 		for(j=0;j<instance.n;j++)
@@ -464,8 +453,8 @@ void tcbvrp_ILP::modelSCF()
 				}
 
 			}
-
 		}
+		myExpr13.end();
 	}
 	// </SCF>
 	// </constraints>
