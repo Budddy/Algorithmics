@@ -714,7 +714,7 @@ void tcbvrp_ILP::modelMTZ()
 		{
 			IloExpr uSizeExpr(env);
 			uSizeExpr += var_u[i][j];
-			model.add(uSizeExpr >= 1);
+			model.add(uSizeExpr >= 0);
 			model.add(uSizeExpr <= NumHopsOnRouteIExpr);
 			uSizeExpr.end();
 		}
