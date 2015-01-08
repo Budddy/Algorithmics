@@ -376,13 +376,13 @@ void tcbvrp_ILP::modelSCF()
 	{
 		for(j=1;j<instance.n;j++)
 		{
-			IloExpr myExpr10(env);
-			IloExpr myExpr11(env);
+			IloExpr incomingExpr(env);
+			IloExpr outgoingExpr(env);
 			for(k=0; k < instance.n; k++)
 			{
 				if(j!=k)
 				{
-					myExpr10 += var_f[i][k][j];
+					incomingExpr += var_f[i][k][j];
 				}
 
 			}
@@ -390,12 +390,12 @@ void tcbvrp_ILP::modelSCF()
 			{
 				if(j!=k)
 				{
-					myExpr11 += var_f[i][j][k];
+					outgoingExpr += var_f[i][j][k];
 				}
 			}
-			model.add(myExpr10 - myExpr11 == 1.0);
-			myExpr10.end();
-			myExpr11.end();
+			model.add(outgoingExpr - incomingExpr == 1.0);
+			incomingExpr.end();
+			outgoingExpr.end();
 		}
 	}
 
@@ -411,11 +411,11 @@ void tcbvrp_ILP::modelSCF()
 			{
 				if(j!=k)
 				{
-					IloExpr myExpr12(env);
-					myExpr12 += var_f[i][j][k];
+					IloExpr flowExpr(env);
+					flowExpr += var_f[i][j][k];
 
-					model.add(myExpr12 >= 0);
-					myExpr12.end();
+					model.add(flowExpr >= 0);
+					flowExpr.end();
 				}
 
 			}
@@ -429,13 +429,13 @@ void tcbvrp_ILP::modelSCF()
 
 	for(i=0;i<instance.m;i++)
 	{
-		IloExpr myExpr13(env);
+		IloExpr numHopsInRouteExpr(env);
 
 		for(j=0;j<instance.n;j++)
 		{
 			for(k=0; k < instance.n; k++)
 			{
-				myExpr13 += var_t[i][j][k];
+				numHopsInRouteExpr += var_t[i][j][k];
 			}
 		}
 
@@ -445,16 +445,16 @@ void tcbvrp_ILP::modelSCF()
 			{
 				if(j!=k)
 				{
-					IloExpr myExpr14(env);
-					myExpr14 += var_f[i][j][k];
+					IloExpr flowExpr(env);
+					flowExpr += var_f[i][j][k];
 
-					model.add(myExpr14 <= (myExpr13-1));
-					myExpr14.end();
+					model.add(flowExpr <= (numHopsInRouteExpr-1));
+					flowExpr.end();
 				}
 
 			}
 		}
-		myExpr13.end();
+		numHopsInRouteExpr.end();
 	}
 	// </SCF>
 	// </constraints>
