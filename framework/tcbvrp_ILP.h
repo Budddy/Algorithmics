@@ -14,6 +14,12 @@ class tcbvrp_ILP
 	typedef IloArray<IloIntVarArray> IloIntVarArray2;
 	typedef IloArray<IloBoolVarArray> IloBoolVarArray2;
 
+	typedef IloArray<IloBoolVarArray>	BoolVarMatrix;
+	typedef IloArray<BoolVarMatrix>		BoolVar3Matrix;		//3D Bool array
+
+	typedef IloArray<IloNumVarArray>	NumVarMatrix;
+	typedef IloArray<NumVarMatrix>		NumVar3Matrix;		//3D Numerical array
+
 private:
 
 	Instance& instance;
@@ -31,6 +37,9 @@ private:
 	void initCPLEX();
 	void setCPLEXParameters();
 
+	void initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r);
+	void initDecisionVars(BoolVar3Matrix &var_t, IloBoolVarArray &var_r);
+	void initObjectiveFunction(BoolVar3Matrix var_t);
 	void modelSCF();
 	void modelMCF();
 	void modelMTZ();
