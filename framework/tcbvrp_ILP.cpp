@@ -183,12 +183,45 @@ void tcbvrp_ILP::modelSCF()
 	 * Each demand node has to have an outgoing arc which goes to a supply node or the originator
 	 */
 
+	 for(k=0; k < instance.m; k++)
+	 {
+	 	for(i=0;i<instance.n;i++)
+	 	{
+	 		for(j=0; j< instance.n; j++)
+	 		{
+	 			if(instance.isSupplyNode(i) && instance.isSupplyNode(j))
+	 			{
+	 				model.add(var_t[k][i][j] == 0);
+	 			}
+	 			if(instance.isDemandNode(i) && instance.isDemandNode(j))
+	 			{
+	 				model.add(var_t[k][i][j] == 0);
+	 			}
+	 			if(i==0 && instance.isDemandNode(j))
+	 			{
+	 				model.add(var_t[k][i][j] == 0);
+	 			}
+	 			if(instance.isSupplyNode(i) && j==0)
+	 			{
+	 				model.add(var_t[k][i][j] == 0);
+	 			}
+	 			if(i==j)
+	 			{
+	 				model.add(var_t[k][i][j] == 0);
+	 			}
+	 		}
+	 	}
+	 }
+
+	/*
+	 * Each demand node has to have an outgoing arc which goes to a supply node or the originator
+	 */
+
 	for(j=1; j< instance.n; j++)
 	{
 		if(instance.isDemandNode(j))
 		{
 			IloExpr toSupplyExpr(env);
-			IloExpr notToDemandExpr(env);
 			for(i=0;i<instance.m;i++)
 			{
 				for(k=0; k < instance.n; k++)
@@ -197,19 +230,12 @@ void tcbvrp_ILP::modelSCF()
 					{
 						toSupplyExpr += var_t[i][j][k];
 					}
-					else{
-						notToDemandExpr += var_t[i][j][k];
-					}
 				}
 			}
 			model.add(toSupplyExpr == 1);
 			toSupplyExpr.end();
-
-			model.add(notToDemandExpr == 0);
-			notToDemandExpr.end();
 		}
 	}
-
 
 	/*
 	 * Each supply node can only go to at most one demand node
@@ -235,31 +261,6 @@ void tcbvrp_ILP::modelSCF()
 		}
 	}
 
-
-	/*
-	 * A supply node is not allowed to go to a supply node or the originator
-	 */
-
-	for(j=1; j< instance.n; j++)
-	{
-		if(instance.isSupplyNode(j))
-		{
-			IloExpr myExpr2(env);
-			for(i=0;i<instance.m;i++)
-			{
-				for(k=0; k < instance.n; k++)
-				{
-					if(instance.isSupplyNode(k) || k==0)
-					{
-						myExpr2 += var_t[i][j][k];
-					}
-				}
-			}
-			model.add(myExpr2 == 0);
-			myExpr2.end();
-		}
-	}
-
 	/*
 	 * The originator is not allowed to have more than m outgoing arcs
 	 * to supply nodes but has at least one for each route
@@ -280,7 +281,7 @@ void tcbvrp_ILP::modelSCF()
 		//model.add(atLeastOneRouteExpr > 0);
 		//atLeastOneRouteExpr.end();
 	}
-	model.add(myExpr3 > 0);
+	//model.add(myExpr3 > 0);
 	model.add(myExpr3 <= instance.m);
 	myExpr3.end();
 
@@ -310,26 +311,6 @@ void tcbvrp_ILP::modelSCF()
 			myExpr5.end();
 		}
 	}
-
-	/*
-	 * The originator is not allowed to go to a demand node or the originator itself
-	 */
-
-	IloExpr originNotToDemandExpr(env);
-	for(i=0;i<instance.m;i++)
-	{
-		for(k=0; k < instance.n; k++)
-		{
-			if(instance.isDemandNode(k) || k == 0)
-			{
-				originNotToDemandExpr += var_t[i][0][k];
-			}
-
-		}
-
-	}
-	model.add(originNotToDemandExpr == 0);
-	originNotToDemandExpr.end();
 
 	/*
 	 * A tour must be finished under the maximum time
