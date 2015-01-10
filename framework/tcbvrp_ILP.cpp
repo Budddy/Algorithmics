@@ -358,22 +358,19 @@ void tcbvrp_ILP::modelSCF()
 	 {
 	 	IloExpr myExpr8(env);
 	 	IloExpr edgeinExpr(env);
-	 	IloExpr edgeoutExpr(env);
 	 	for(int j=1; j < instance.n; j++)
 	 	{
 	 		myExpr8 += var_f[i][0][j];
 	 		for(int k=0; k < instance.n; k++)
 	 		{
 	 			if(j!=k){
-	 				edgeinExpr += var_t[i][k][j];
-	 				edgeoutExpr += var_t[i][j][k];
+	 				edgeinExpr += var_t[i][k][j] + var_t[i][j][k];
 	 			}
 	 		}
 	 	}
-	 	model.add(myExpr8 == (edgeinExpr + edgeoutExpr)/2);
+	 	model.add(myExpr8 == (edgeinExpr)/2);
 	 	myExpr8.end();
 	 	edgeinExpr.end();
-	 	edgeoutExpr.end();
 	 }
 
 	/*
@@ -387,22 +384,19 @@ void tcbvrp_ILP::modelSCF()
 			IloExpr incomingExpr(env);
 			IloExpr outgoingExpr(env);
 			IloExpr edgeinExpr(env);
-			IloExpr edgeoutExpr(env);
 			for(int k=0; k < instance.n; k++)
 			{
 				if(j!=k)
 				{
 					incomingExpr += var_f[i][k][j];
 					outgoingExpr += var_f[i][j][k];
-					edgeinExpr += var_t[i][k][j];
-					edgeoutExpr += var_t[i][j][k];
+					edgeinExpr += var_t[i][k][j] + var_t[i][j][k];
 				}
 			}
-			model.add(incomingExpr - outgoingExpr == (edgeinExpr + edgeoutExpr)/2);
+			model.add(incomingExpr - outgoingExpr == (edgeinExpr)/2);
 			incomingExpr.end();
 			outgoingExpr.end();
 			edgeinExpr.end();
-			edgeoutExpr.end();
 		}
 	}
 
@@ -428,7 +422,7 @@ void tcbvrp_ILP::modelSCF()
 	}
 
 	/*
-	 * the flow must be smaller than the number of hops in this route (ERROR!)
+	 * the flow must be smaller than the number of hops
 	 */
 
 	for(int i=0;i<instance.m;i++)
@@ -575,20 +569,20 @@ void tcbvrp_ILP::modelMCF()
 	 {
 	 	IloExpr incomingExpr(env);
 	 	IloExpr outgoingExpr(env);
-	 	//IloExpr edgeinExpr(env);
+	 	IloExpr edgeinExpr(env);
 	 	for(int j=1;j<instance.n;j++)
 	 	{
 	 		incomingExpr += var_f[k][0][j];
 	 		outgoingExpr += var_f[k][j][0];
-	 		/*for(int i=0;i<instance.m;i++)
+	 		for(int i=0;i<instance.m;i++)
 	 		{
 	 			edgeinExpr += var_t[i][k][j] + var_t[i][j][k];
-	 		}*/
+	 		}
 	 	}
-	 	model.add(incomingExpr - outgoingExpr == 1);
+	 	model.add(incomingExpr - outgoingExpr == edgeinExpr/2);
 	 	incomingExpr.end();
 	 	outgoingExpr.end();
-	 	//edgeinExpr.end();
+	 	edgeinExpr.end();
 	 }
 
 	/*
