@@ -93,8 +93,8 @@ void tcbvrp_ILP::setCPLEXParameters()
 	cplex.setParam( IloCplex::TiLim, 3600);
 }
 
-
-void tcbvrp_ILP::initObjectiveFunction(BoolVar3Matrix var_t){
+void tcbvrp_ILP::initObjectiveFunction(BoolVar3Matrix var_t)
+{
 	IloExpr objFunction(env);
 	for(int i=0;i<instance.m;i++)
 	{
@@ -111,8 +111,8 @@ void tcbvrp_ILP::initObjectiveFunction(BoolVar3Matrix var_t){
 	objFunction.end();
 }
 
-void tcbvrp_ILP::initDecisionVars(BoolVar3Matrix &var_t, IloBoolVarArray &var_r){
-
+void tcbvrp_ILP::initDecisionVars(BoolVar3Matrix &var_t, IloBoolVarArray &var_r)
+{
 	/*
 	 * t(i,j,k) is 1 if the arc from (j,k) is used by the tour i
 	 */
@@ -133,13 +133,11 @@ void tcbvrp_ILP::initDecisionVars(BoolVar3Matrix &var_t, IloBoolVarArray &var_r)
 	/*
 	 * additional (continuous) variables n(i) represent the number of nodes in the tour i
 	 */
+
 	for(int i=0; i < instance.m; i++)
 	{
 		var_r[i] = IloBoolVar(env, Tools::indicesToString( "r_", i).c_str());
 	}
-
-
-
 }
 
 void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
@@ -292,14 +290,11 @@ void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 			for(int k=0; k < instance.n; k++)
 			{
 				myExpr4 += var_t[i][k][j];
-
 			}
-
 			for(int k=0; k < instance.n; k++)
 			{
 				myExpr5 += var_t[i][j][k];
 			}
-
 			model.add(myExpr4 == myExpr5);
 			myExpr4.end();
 			myExpr5.end();
@@ -319,20 +314,18 @@ void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 			{
 				maxTimeExpr += var_t[i][j][k] * instance.getDistance(j, k);
 			}
-
 		}
 		model.add(maxTimeExpr <= instance.T);
 		maxTimeExpr.end();
 	}
-
 }
 
 void tcbvrp_ILP::modelSCF()
 {
-
 	/*
 	 * additional (continuous) variables f(i,j,k) represent the amount of "flow" on arc (j;k) by the tour i
 	 */
+
 	NumVar3Matrix var_f(env,instance.m);
 	for(int i=0; i < instance.m; i++)
 	{
@@ -348,21 +341,12 @@ void tcbvrp_ILP::modelSCF()
 	}
 
 	/*
-	 * additional (continuous) variables n(i) represent the number of nodes in the tour i
-	 */
-	IloNumVarArray var_n(env,instance.m);
-	for(int i=0; i < instance.m; i++)
-	{
-		var_n[i] = IloNumVar(env, Tools::indicesToString( "n_", i).c_str());
-	}
-
-	/*
 	 * t(i,j,k) is 1 if the arc from (j,k) is used by the tour i
 	 */
+
 	BoolVar3Matrix var_t(env,instance.m);
 	IloBoolVarArray var_r(env,instance.m);
 	initDecisionVars(var_t,var_r);
-
 	initObjectiveFunction(var_t);
 	initConstraints(var_t,var_r);
 
@@ -370,21 +354,27 @@ void tcbvrp_ILP::modelSCF()
 	 * Sending out n-1 commodities for every route. n is the number of nodes in this route
 	 */
 
-	for(int i=0;i<instance.m;i++)
-	{
-		IloExpr myExpr8(env);
-		IloExpr myExpr9(env);
-
-		for(int j=1; j < instance.n; j++)
-		{
-			myExpr8 += var_f[i][0][j];
-		}
-		myExpr9 += var_n[i];
-
-		model.add(myExpr8 == myExpr9);
-		myExpr8.end();
-		myExpr9.end();
-	}
+	 for(int i=0;i<instance.m;i++)
+	 {
+	 	IloExpr myExpr8(env);
+	 	IloExpr edgeinExpr(env);
+	 	IloExpr edgeoutExpr(env);
+	 	for(int j=1; j < instance.n; j++)
+	 	{
+	 		myExpr8 += var_f[i][0][j];
+	 		for(int k=0; k < instance.n; k++)
+	 		{
+	 			if(j!=k){
+	 				edgeinExpr += var_t[i][k][j];
+	 				edgeoutExpr += var_t[i][j][k];
+	 			}
+	 		}
+	 	}
+	 	model.add(myExpr8 == (edgeinExpr + edgeoutExpr)/2);
+	 	myExpr8.end();
+	 	edgeinExpr.end();
+	 	edgeoutExpr.end();
+	 }
 
 	/*
 	 * Leaving one commodity on each node.
@@ -407,7 +397,6 @@ void tcbvrp_ILP::modelSCF()
 					edgeinExpr += var_t[i][k][j];
 					edgeoutExpr += var_t[i][j][k];
 				}
-
 			}
 			model.add(incomingExpr - outgoingExpr == (edgeinExpr + edgeoutExpr)/2);
 			incomingExpr.end();
@@ -431,13 +420,10 @@ void tcbvrp_ILP::modelSCF()
 				{
 					IloExpr flowExpr(env);
 					flowExpr += var_f[i][j][k];
-
 					model.add(flowExpr >= 0);
 					flowExpr.end();
 				}
-
 			}
-
 		}
 	}
 
@@ -455,7 +441,6 @@ void tcbvrp_ILP::modelSCF()
 				{
 					model.add(var_f[i][j][k] <= instance.n * var_t[i][j][k]);
 				}
-
 			}
 		}
 	}
@@ -466,6 +451,7 @@ void tcbvrp_ILP::modelMTZ()
 	/*
 	 * additional variables uij , are used to indicate the order in which the nodes are visited on route i
 	 */
+
 	NumVarMatrix var_u(env,instance.m);
 	for(int i=0; i < instance.m; i++)
 	{
@@ -479,18 +465,16 @@ void tcbvrp_ILP::modelMTZ()
 	/*
 	 * t(i,j,k) is 1 if the arc from (j,k) is used by the tour i
 	 */
+
 	BoolVar3Matrix var_t(env,instance.m);
 	IloBoolVarArray var_r(env,instance.m);
 	initDecisionVars(var_t,var_r);
-
 	initObjectiveFunction(var_t);
 	initConstraints(var_t,var_r);
 
 	/*
 	 * the order must be bigger than 1 and smaller than the number of nodes
 	 */
-
-
 
 	for(int i=0;i<instance.m;i++)
 	{
@@ -502,7 +486,6 @@ void tcbvrp_ILP::modelMTZ()
 				NumHopsOnRouteIExpr += var_t[i][j][k];
 			}
 		}
-
 		for(int j=1;j<instance.n;j++)
 		{
 			IloExpr uSizeExpr(env);
@@ -511,14 +494,13 @@ void tcbvrp_ILP::modelMTZ()
 			model.add(uSizeExpr <= NumHopsOnRouteIExpr);
 			uSizeExpr.end();
 		}
-
 		NumHopsOnRouteIExpr.end();
 	}
-
 
 	/*
 	 * if the arc (j,k) on route i is chosen then the order of the node k must be higher than from the node j
 	 */
+
 	 for(int i=0;i<instance.m;i++)
 	 {
 	 	for(int j=1;j<instance.n;j++)
@@ -539,11 +521,10 @@ void tcbvrp_ILP::modelMTZ()
 
 void tcbvrp_ILP::modelMCF()
 {
-
-
 	/*
 	 * additional (continuous) variables f(i,j,k) represent the amount of "flow" on arc (j;k) by the tour i
 	 */
+
 	 NumVar3Matrix var_f(env,instance.n);
 	 for(int i=0; i < instance.n; i++)
 	 {
@@ -558,14 +539,13 @@ void tcbvrp_ILP::modelMCF()
 	 	}
 	 }
 
-
 	/*
 	 * t(i,j,k) is 1 if the arc from (j,k) is used by the tour i
 	 */
+
 	BoolVar3Matrix var_t(env,instance.m);
 	IloBoolVarArray var_r(env,instance.m);
 	initDecisionVars(var_t,var_r);
-
 	initObjectiveFunction(var_t);
 	initConstraints(var_t,var_r);
 
@@ -655,9 +635,7 @@ void tcbvrp_ILP::modelMCF()
 	 				model.add(flowExpr >= 0);
 	 				flowExpr.end();
 	 			}
-
 	 		}
-
 	 	}
 	 }
 
@@ -688,6 +666,3 @@ void tcbvrp_ILP::modelMCF()
 	 	}
 	 }
 }
-
-
-
