@@ -142,6 +142,10 @@ void tcbvrp_ILP::initDecisionVars(BoolVar3Matrix &var_t, IloBoolVarArray &var_r)
 
 void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 
+	/*
+	* var_f is true if there is an outgoing route from the originator
+	*/
+
 	 for(int i=0;i<instance.m;i++)
 	 {
 	 	IloExpr exprExpr(env);
@@ -152,6 +156,10 @@ void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 	 	model.add(exprExpr == var_r[i]);
 	 	exprExpr.end();
 	 }
+
+	 /*
+	 * there are only other arcs if there is an outgoing arc from the originator
+	 */
 
 	 for(int i=0;i<instance.m;i++)
 	 {
@@ -165,7 +173,11 @@ void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 	 }
 
 	/*
-	 * Each demand node has to have an outgoing arc which goes to a supply node or the originator
+	 * a supply node is not allowed to got to a supply node
+	 * a demand node is not allowed to got to a demand node
+	 * the originator is not allowed to got to a demand node
+	 * a supply node is not allowed to got to the originator
+	 * no self loops are allowed
 	 */
 
 	 for(int k=0; k < instance.m; k++)
@@ -248,32 +260,16 @@ void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 
 	/*
 	 * The originator is not allowed to have more than m outgoing arcs
-	 * to supply nodes but has at least one for each route
 	 */
 
 	IloExpr myExpr3(env);
 	for(int i=0;i<instance.m;i++)
 	{
-		IloExpr atLeastOneRouteExpr(env);
-		IloExpr numNodesExpr(env);
 		for(int k=0; k < instance.n; k++)
 		{
-			if(instance.isSupplyNode(k))
-			{
-				myExpr3 += var_t[i][0][k];
-				atLeastOneRouteExpr += var_t[i][0][k];
-			}
-			for(int j=0; j < instance.n; j++)
-			{
-				numNodesExpr+= var_t[i][j][k];
-			}
+			myExpr3 += var_t[i][0][k];
 		}
-		model.add(atLeastOneRouteExpr >= 0);
-		model.add(atLeastOneRouteExpr <= numNodesExpr);
-		atLeastOneRouteExpr.end();
-		numNodesExpr.end();
 	}
-	//model.add(myExpr3 > 0);
 	model.add(myExpr3 <= instance.m);
 	myExpr3.end();
 
@@ -290,9 +286,6 @@ void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 			for(int k=0; k < instance.n; k++)
 			{
 				myExpr4 += var_t[i][k][j];
-			}
-			for(int k=0; k < instance.n; k++)
-			{
 				myExpr5 += var_t[i][j][k];
 			}
 			model.add(myExpr4 == myExpr5);
@@ -544,25 +537,31 @@ void tcbvrp_ILP::modelMCF()
 	initConstraints(var_t,var_r);
 
 	/*
-	 * Sending out 1 commoditie for every node
+	 * Sending out 1 commoditie for every used node
 	 */
 
 	 for(int k=1; k < instance.n; k++)
 	 {
 	 	IloExpr myflowExpr(env);
+	 	IloExpr edgeinExpr(env);
 	 	for(int i=0;i<instance.n;i++)
 	 	{
 	 		if(i!=k)
 	 		{
 	 			myflowExpr += var_f[k][i][k];
 	 		}
+	 		for(int j=0;j<instance.m;j++)
+	 		{
+	 			edgeinExpr += var_t[j][i][k];
+	 		}
 	 	}
-	 	model.add(myflowExpr == 1);
+	 	model.add(myflowExpr == edgeinExpr);
 	 	myflowExpr.end();
+	 	edgeinExpr.end();
 	 }
 
 	/*
-	 * Leaving one commodity on each node.
+	 * assign one comodity to every used node
 	 */
 
 	 for(int k=1; k < instance.n; k++)
@@ -576,17 +575,17 @@ void tcbvrp_ILP::modelMCF()
 	 		outgoingExpr += var_f[k][j][0];
 	 		for(int i=0;i<instance.m;i++)
 	 		{
-	 			edgeinExpr += var_t[i][k][j] + var_t[i][j][k];
+	 			edgeinExpr += var_t[i][j][k];
 	 		}
 	 	}
-	 	model.add(incomingExpr - outgoingExpr == edgeinExpr/2);
+	 	model.add(incomingExpr - outgoingExpr == edgeinExpr);
 	 	incomingExpr.end();
 	 	outgoingExpr.end();
 	 	edgeinExpr.end();
 	 }
 
 	/*
-	 * Leaving one commodity on each node.
+	 * every node takes the commodody assigned to it.
 	 */
 
 	 for(int k=1; k < instance.n; k++)
@@ -634,7 +633,7 @@ void tcbvrp_ILP::modelMCF()
 	 }
 
 	/*
-	 * the flow must be smaller or equal to the
+	 * the flow must be zero if the node is not used and 1 otherwise
 	 */
 
 	 for(int k=1; k < instance.n; k++)
