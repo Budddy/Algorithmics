@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # declare -a mode=("scf" "mtz" "mcf")
-declare -a mode=("mtz")
-declare -a instances=("tcbvrp_10_1_T240_m2.prob" "tcbvrp_10_1_T480_m2.prob" "tcbvrp_10_2_T240_m2.prob" "tcbvrp_10_2_T480_m2.prob" "tcbvrp_20_1_T240_m3.prob" "tcbvrp_20_1_T480_m2.prob" "tcbvrp_20_2_T240_m4.prob" "tcbvrp_20_2_T480_m2.prob" "tcbvrp_30_2_T240_m4.prob" "tcbvrp_30_2_T480_m2.prob" "tcbvrp_60_1_T360_m6.prob" "tcbvrp_60_1_T480_m4.prob" "tcbvrp_90_1_T480_m8.prob" "tcbvrp_120_1_T480_m8.prob" "tcbvrp_180_1_T720_m10.prob")
+declare -a mode=("scf")
+declare -a instances=("tcbvrp_10_1_T240_m2.prob" "tcbvrp_10_1_T480_m2.prob" "tcbvrp_10_2_T240_m2.prob" "tcbvrp_10_2_T480_m2.prob" "tcbvrp_20_1_T240_m3.prob" "tcbvrp_20_1_T480_m2.prob" "tcbvrp_20_2_T240_m4.prob" "tcbvrp_20_2_T480_m2.prob" "tcbvrp_30_1_T240_m4.prob" "tcbvrp_30_1_T480_m2.prob" "tcbvrp_30_2_T240_m4.prob" "tcbvrp_30_2_T480_m2.prob" "tcbvrp_60_1_T360_m6.prob" "tcbvrp_60_1_T480_m4.prob" "tcbvrp_90_1_T480_m8.prob" "tcbvrp_120_1_T480_m8.prob" "tcbvrp_180_1_T720_m10.prob")
 
 for m in "${mode[@]}"
 do
