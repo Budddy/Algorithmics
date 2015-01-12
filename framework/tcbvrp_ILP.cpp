@@ -512,16 +512,20 @@ void tcbvrp_ILP::modelMCF()
 	 * additional (continuous) variables f(i,j,k) represent the amount of "flow" on arc (j;k) by the tour i
 	 */
 
-	 NumVar3Matrix var_f(env,instance.n);
-	 for(int i=0; i < instance.n; i++)
+	 NumVar4Matrix var_f(env,instance.m);
+	 for(int l=0; l < instance.m; l++)
 	 {
-	 	var_f[i] = NumVarMatrix(env, instance.n);
-	 	for(int j=0; j < instance.n; j++)
+	 	var_f[l] = NumVar3Matrix(env, instance.n);
+	 	for(int i=0; i < instance.n; i++)
 	 	{
-	 		var_f[i][j] = IloNumVarArray(env, instance.n);
-	 		for(int k=0; k < instance.n; k++)
+	 		var_f[l][i] = NumVarMatrix(env, instance.n);
+	 		for(int j=0; j < instance.n; j++)
 	 		{
-	 			var_f[i][j][k] = IloNumVar(env, Tools::indicesToString( "f_", i, j, k).c_str());
+	 			var_f[l][i][j] = IloNumVarArray(env, instance.n);
+	 			for(int k=0; k < instance.n; k++)
+	 			{
+	 				var_f[l][i][j][k] = IloNumVar(env, Tools::indicesToString( "f_", i, j, k).c_str());
+	 			}
 	 		}
 	 	}
 	 }
@@ -530,11 +534,11 @@ void tcbvrp_ILP::modelMCF()
 	 * t(i,j,k) is 1 if the arc from (j,k) is used by the tour i
 	 */
 
-	BoolVar3Matrix var_t(env,instance.m);
-	IloBoolVarArray var_r(env,instance.m);
-	initDecisionVars(var_t,var_r);
-	initObjectiveFunction(var_t);
-	initConstraints(var_t,var_r);
+	 BoolVar3Matrix var_t(env,instance.m);
+	 IloBoolVarArray var_r(env,instance.m);
+	 initDecisionVars(var_t,var_r);
+	 initObjectiveFunction(var_t);
+	 initConstraints(var_t,var_r);
 
 	/*
 	 * Sending out 1 commoditie for every used node
@@ -544,15 +548,16 @@ void tcbvrp_ILP::modelMCF()
 	 {
 	 	IloExpr myflowExpr(env);
 	 	IloExpr edgeinExpr(env);
-	 	for(int i=0;i<instance.n;i++)
+	 	for(int l=0;l<instance.m;l++)
 	 	{
-	 		if(i!=k)
+	 		for(int i=0;i<instance.n;i++)
 	 		{
-	 			myflowExpr += var_f[k][i][k];
-	 		}
-	 		for(int j=0;j<instance.m;j++)
-	 		{
-	 			edgeinExpr += var_t[j][i][k];
+	 			if(i!=k)
+	 			{
+	 				myflowExpr += var_f[l][k][i][k];
+	 			}
+	 			edgeinExpr += var_t[l][i][k];
+
 	 		}
 	 	}
 	 	model.add(myflowExpr == edgeinExpr);
@@ -569,13 +574,13 @@ void tcbvrp_ILP::modelMCF()
 	 	IloExpr incomingExpr(env);
 	 	IloExpr outgoingExpr(env);
 	 	IloExpr edgeinExpr(env);
-	 	for(int j=1;j<instance.n;j++)
+	 	for(int l=0;l<instance.m;l++)
 	 	{
-	 		incomingExpr += var_f[k][0][j];
-	 		outgoingExpr += var_f[k][j][0];
-	 		for(int i=0;i<instance.m;i++)
+	 		for(int j=1;j<instance.n;j++)
 	 		{
-	 			edgeinExpr += var_t[i][j][k];
+	 			incomingExpr += var_f[l][k][0][j];
+	 			outgoingExpr += var_f[l][k][j][0];
+	 			edgeinExpr += var_t[l][j][k];
 	 		}
 	 	}
 	 	model.add(incomingExpr - outgoingExpr == edgeinExpr);
@@ -596,12 +601,15 @@ void tcbvrp_ILP::modelMCF()
 	 		{
 	 			IloExpr incomingExpr(env);
 	 			IloExpr outgoingExpr(env);
-	 			for(int i=0;i<instance.n;i++)
+	 			for(int l=0;l<instance.m;l++)
 	 			{
-	 				if(i!=j)
+	 				for(int i=0;i<instance.n;i++)
 	 				{
-	 					incomingExpr += var_f[k][i][j];
-	 					outgoingExpr += var_f[k][j][i];
+	 					if(i!=j)
+	 					{
+	 						incomingExpr += var_f[l][k][i][j];
+	 						outgoingExpr += var_f[l][k][j][i];
+	 					}
 	 				}
 	 			}
 	 			model.add(incomingExpr - outgoingExpr == 0);
@@ -621,12 +629,15 @@ void tcbvrp_ILP::modelMCF()
 	 	{
 	 		for(int j=0;j<instance.n;j++)
 	 		{
-	 			if(j!=i)
+	 			for(int l=0;l<instance.m;l++)
 	 			{
-	 				IloExpr flowExpr(env);
-	 				flowExpr += var_f[k][i][j];
-	 				model.add(flowExpr >= 0);
-	 				flowExpr.end();
+	 				if(j!=i)
+	 				{
+	 					IloExpr flowExpr(env);
+	 					flowExpr += var_f[l][k][i][j];
+	 					model.add(flowExpr >= 0);
+	 					flowExpr.end();
+	 				}
 	 			}
 	 		}
 	 	}
@@ -644,16 +655,16 @@ void tcbvrp_ILP::modelMCF()
 	 		{
 	 			if(j!=i)
 	 			{
-	 				IloExpr flowExpr(env);
-	 				IloExpr conExpr(env);
-	 				flowExpr += var_f[k][i][j];
 	 				for(int l=0;l<instance.m;l++)
 	 				{
+	 					IloExpr flowExpr(env);
+	 					IloExpr conExpr(env);
+	 					flowExpr += var_f[l][k][i][j];
 	 					conExpr += var_t[l][i][j];
+	 					model.add(flowExpr <= conExpr);
+	 					conExpr.end();
+	 					flowExpr.end();
 	 				}
-	 				model.add(flowExpr <= conExpr);
-	 				conExpr.end();
-	 				flowExpr.end();
 	 			}
 	 		}
 	 	}

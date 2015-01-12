@@ -19,6 +19,7 @@ class tcbvrp_ILP
 
 	typedef IloArray<IloNumVarArray>	NumVarMatrix;
 	typedef IloArray<NumVarMatrix>		NumVar3Matrix;		//3D Numerical array
+	typedef IloArray<NumVar3Matrix>		NumVar4Matrix;		//4D Numerical array
 
 private:
 
