@@ -509,7 +509,7 @@ void tcbvrp_ILP::modelMTZ()
 void tcbvrp_ILP::modelMCF()
 {
 	/*
-	 * additional (continuous) variables f(i,j,k) represent the amount of "flow" on arc (j;k) by the tour i
+	 * var_f[n][k][i][j] indicates the flow for commodity k from i to j in tour n
 	 */
 
 	 NumVar4Matrix var_f(env,instance.m);
@@ -524,7 +524,7 @@ void tcbvrp_ILP::modelMCF()
 	 			var_f[l][i][j] = IloNumVarArray(env, instance.n);
 	 			for(int k=0; k < instance.n; k++)
 	 			{
-	 				var_f[l][i][j][k] = IloNumVar(env, Tools::indicesToString( "f_", i, j, k).c_str());
+	 				var_f[l][i][j][k] = IloBoolVar(env, Tools::indicesToString( "f_", i, j, k).c_str());
 	 			}
 	 		}
 	 	}
@@ -541,15 +541,39 @@ void tcbvrp_ILP::modelMCF()
 	 initConstraints(var_t,var_r);
 
 	/*
-	 * Sending out 1 commoditie for every used node
+	 * assign one commodity to every used node
 	 */
 
 	 for(int k=1; k < instance.n; k++)
 	 {
-	 	IloExpr myflowExpr(env);
-	 	IloExpr edgeinExpr(env);
 	 	for(int l=0;l<instance.m;l++)
 	 	{
+	 		IloExpr incomingExpr(env);
+	 		IloExpr outgoingExpr(env);
+	 		IloExpr edgeinExpr(env);
+	 		for(int j=1;j<instance.n;j++)
+	 		{
+	 			incomingExpr += var_f[l][k][0][j];
+	 			outgoingExpr += var_f[l][k][j][0];
+	 			edgeinExpr += var_t[l][j][k];
+	 		}
+	 		model.add(incomingExpr - outgoingExpr == edgeinExpr);
+	 		incomingExpr.end();
+	 		outgoingExpr.end();
+	 		edgeinExpr.end();
+	 	}
+	 }
+
+	/*
+	 * Sending out 1 commodity for every used node from the originator
+	 */
+
+	 for(int k=1; k < instance.n; k++)
+	 {
+	 	for(int l=0;l<instance.m;l++)
+	 	{
+	 		IloExpr myflowExpr(env);
+	 		IloExpr edgeinExpr(env);
 	 		for(int i=0;i<instance.n;i++)
 	 		{
 	 			if(i!=k)
@@ -559,50 +583,26 @@ void tcbvrp_ILP::modelMCF()
 	 			edgeinExpr += var_t[l][i][k];
 
 	 		}
+	 		model.add(myflowExpr == edgeinExpr);
+	 		myflowExpr.end();
+	 		edgeinExpr.end();
 	 	}
-	 	model.add(myflowExpr == edgeinExpr);
-	 	myflowExpr.end();
-	 	edgeinExpr.end();
 	 }
 
 	/*
-	 * assign one comodity to every used node
-	 */
-
-	 for(int k=1; k < instance.n; k++)
-	 {
-	 	IloExpr incomingExpr(env);
-	 	IloExpr outgoingExpr(env);
-	 	IloExpr edgeinExpr(env);
-	 	for(int l=0;l<instance.m;l++)
-	 	{
-	 		for(int j=1;j<instance.n;j++)
-	 		{
-	 			incomingExpr += var_f[l][k][0][j];
-	 			outgoingExpr += var_f[l][k][j][0];
-	 			edgeinExpr += var_t[l][j][k];
-	 		}
-	 	}
-	 	model.add(incomingExpr - outgoingExpr == edgeinExpr);
-	 	incomingExpr.end();
-	 	outgoingExpr.end();
-	 	edgeinExpr.end();
-	 }
-
-	/*
-	 * every node takes the commodody assigned to it.
+	 * no node takes a commodity not assigned to it
 	 */
 
 	 for(int k=1; k < instance.n; k++)
 	 {
 	 	for(int j=1;j<instance.n;j++)
 	 	{
-	 		if(j!=k)
+	 		for(int l=0;l<instance.m;l++)
 	 		{
-	 			IloExpr incomingExpr(env);
-	 			IloExpr outgoingExpr(env);
-	 			for(int l=0;l<instance.m;l++)
+	 			if(j!=k)
 	 			{
+	 				IloExpr incomingExpr(env);
+	 				IloExpr outgoingExpr(env);
 	 				for(int i=0;i<instance.n;i++)
 	 				{
 	 					if(i!=j)
@@ -611,10 +611,10 @@ void tcbvrp_ILP::modelMCF()
 	 						outgoingExpr += var_f[l][k][j][i];
 	 					}
 	 				}
+	 				model.add(incomingExpr - outgoingExpr == 0);
+	 				incomingExpr.end();
+	 				outgoingExpr.end();
 	 			}
-	 			model.add(incomingExpr - outgoingExpr == 0);
-	 			incomingExpr.end();
-	 			outgoingExpr.end();
 	 		}
 	 	}
 	 }
