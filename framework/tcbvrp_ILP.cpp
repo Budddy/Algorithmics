@@ -262,16 +262,31 @@ void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 	 * The originator is not allowed to have more than m outgoing arcs
 	 */
 
-	IloExpr myExpr3(env);
-	for(int i=0;i<instance.m;i++)
-	{
-		for(int k=0; k < instance.n; k++)
-		{
-			myExpr3 += var_t[i][0][k];
-		}
-	}
-	model.add(myExpr3 <= instance.m);
-	myExpr3.end();
+	 IloExpr myExpr3(env);
+	 for(int i=0;i<instance.m;i++)
+	 {
+	 	IloExpr atLeastOneRouteExpr(env);
+	 	IloExpr numNodesExpr(env);
+
+	 	for(int k=0; k < instance.n; k++)
+	 	{
+	 		if(instance.isSupplyNode(k))
+	 		{
+	 			myExpr3 += var_t[i][0][k];
+	 			atLeastOneRouteExpr += var_t[i][0][k];
+	 		}
+	 		for(int j=0; j < instance.n; j++)
+	 		{
+	 			numNodesExpr+= var_t[i][j][k];
+	 		}
+	 	}
+	 	model.add(atLeastOneRouteExpr >= 0);
+	 	model.add(atLeastOneRouteExpr <= numNodesExpr);
+	 	atLeastOneRouteExpr.end();
+	 	numNodesExpr.end();
+	 }
+	 model.add(myExpr3 <= instance.m);
+	 myExpr3.end();
 
 	/*
 	 * If the ingoing arc in one node is from a tour the outgoing arc has to be from the same tour
@@ -426,7 +441,13 @@ void tcbvrp_ILP::modelSCF()
 			{
 				if(j!=k)
 				{
-					model.add(var_f[i][j][k] <= instance.n * var_t[i][j][k]);
+					IloExpr flow1Expr(env);
+					IloExpr flow2Expr(env);
+					flow1Expr += var_f[i][j][k];
+					flow2Expr += var_t[i][j][k];
+					model.add(flow1Expr <= instance.n * flow2Expr);
+					flow1Expr.end();
+					flow2Expr.end();
 				}
 			}
 		}
