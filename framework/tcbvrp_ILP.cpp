@@ -319,16 +319,16 @@ void tcbvrp_ILP::modelSCF()
 	 * additional (continuous) variables f(i,j,k) represent the amount of "flow" on arc (j;k) by the tour i
 	 */
 
-	IntVar3Matrix var_f(env,instance.m);
+	NumVar3Matrix var_f(env,instance.m);
 	for(int i=0; i < instance.m; i++)
 	{
-		var_f[i] = IntVarMatrix(env, instance.n);
+		var_f[i] = NumVarMatrix(env, instance.n);
 		for(int j=0; j < instance.n; j++)
 		{
-			var_f[i][j] = IloIntVarArray(env, instance.n);
+			var_f[i][j] = IloNumVarArray(env, instance.n);
 			for(int k=0; k < instance.n; k++)
 			{
-				var_f[i][j][k] = IloIntVar(env, Tools::indicesToString( "f_", i, j, k).c_str());
+				var_f[i][j][k] = IloNumVar(env, Tools::indicesToString( "f_", i, j, k).c_str());
 			}
 		}
 	}
@@ -439,13 +439,13 @@ void tcbvrp_ILP::modelMTZ()
 	 * additional variables uij , are used to indicate the order in which the nodes are visited on route i
 	 */
 
-	IntVarMatrix var_u(env,instance.m);
+	NumVarMatrix var_u(env,instance.m);
 	for(int i=0; i < instance.m; i++)
 	{
-		var_u[i] = IloIntVarArray(env, instance.n);
+		var_u[i] = IloNumVarArray(env, instance.n);
 		for(int k=0; k < instance.n; k++)
 		{
-			var_u[i][k] = IloIntVar(env, Tools::indicesToString( "u_", i, k).c_str());
+			var_u[i][k] = IloNumVar(env, Tools::indicesToString( "u_", i, k).c_str());
 		}
 	}
 
@@ -460,7 +460,7 @@ void tcbvrp_ILP::modelMTZ()
 	initConstraints(var_t,var_r);
 
 	/*
-	 * the order must be bigger than 1 and smaller than the number of nodes
+	 * the order must be bigger or equal to 0 and smaller than the number of nodes
 	 */
 
 	for(int i=0;i<instance.m;i++)
@@ -512,19 +512,19 @@ void tcbvrp_ILP::modelMCF()
 	 * var_f[n][k][i][j] indicates the flow for commodity k from i to j in tour n
 	 */
 
-	 BoolVar4Matrix var_f(env,instance.m);
+	 NumVar4Matrix var_f(env,instance.m);
 	 for(int l=0; l < instance.m; l++)
 	 {
-	 	var_f[l] = BoolVar3Matrix(env, instance.n);
+	 	var_f[l] = NumVar3Matrix(env, instance.n);
 	 	for(int i=0; i < instance.n; i++)
 	 	{
-	 		var_f[l][i] = BoolVarMatrix(env, instance.n);
+	 		var_f[l][i] = NumVarMatrix(env, instance.n);
 	 		for(int j=0; j < instance.n; j++)
 	 		{
-	 			var_f[l][i][j] = IloBoolVarArray(env, instance.n);
+	 			var_f[l][i][j] = IloNumVarArray(env, instance.n);
 	 			for(int k=0; k < instance.n; k++)
 	 			{
-	 				var_f[l][i][j][k] = IloBoolVar(env, Tools::indicesToString( "f_", i, j, k).c_str());
+	 				var_f[l][i][j][k] = IloNumVar(env, Tools::indicesToString( "f_", i, j, k).c_str());
 	 			}
 	 		}
 	 	}
@@ -556,10 +556,10 @@ void tcbvrp_ILP::modelMCF()
 	 		{
 	 			incomingExpr += var_f[l][k][0][j];
 	 			outgoingExpr += var_f[l][k][j][0];
-	 			edgeinExpr += var_t[l][j][k];
+	 			edgeinExpr += var_t[l][j][k] + var_t[l][k][j];
 	 	//		edgeoutExpr += var_t[l][k][j];
 	 		}
-	 		model.add(incomingExpr - outgoingExpr == edgeinExpr);
+	 		model.add(incomingExpr - outgoingExpr == edgeinExpr/2);
 	 	//	model.add(outgoingExpr - incomingExpr == edgeoutExpr);
 	 		incomingExpr.end();
 	 		outgoingExpr.end();
@@ -630,7 +630,7 @@ void tcbvrp_ILP::modelMCF()
 	/*
 	 * the flow must be greater or equal than 0 for all routes
 	 */
-	 /*for(int k=1; k < instance.n; k++)
+	 for(int k=1; k < instance.n; k++)
 	 {
 	 	for(int i=0;i<instance.n;i++)
 	 	{
@@ -649,7 +649,7 @@ void tcbvrp_ILP::modelMCF()
 	 		}
 	 	}
 	 }
-*/
+
 	/*
 	 * the flow must be zero if the node is not used and 1 otherwise
 	 */
