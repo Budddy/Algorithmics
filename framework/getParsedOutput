@@ -1,2 +1,4 @@
-cat test2.* | grep -e "CPLEX status" -e "Branch-and-Bound nodes" -e "Objective value:" -e "CPU time" -e "Loaded Instance" -e "Used Model:"
+#/bin/bash
+
+cat $@.* | grep -e "CPLEX status" -e "Branch-and-Bound nodes" -e "Objective value:" -e "CPU time" -e "Loaded Instance" -e "Used Model:"
 
