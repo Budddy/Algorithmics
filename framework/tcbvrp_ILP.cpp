@@ -172,6 +172,77 @@ void tcbvrp_ILP::initConstraints(BoolVar3Matrix var_t,IloBoolVarArray var_r){
 	 	}
 	 }
 
+	 int iNumDemandNodes = 0;
+	 for(int i=0;i<instance.n;i++)
+	 {
+	 	if(instance.isDemandNode(i))
+	 		iNumDemandNodes++;
+	 }
+
+	 IloBoolVarArray var_s(env,instance.n);
+	 for(int i=0; i < instance.n; i++)
+	 {
+	 	var_s[i] = IloBoolVar(env, Tools::indicesToString( "s_", i).c_str());
+	 }
+
+
+	 
+	 
+ 	for(int k=1; k < instance.n; k++)
+ 	{
+ 		if(instance.isSupplyNode(k))
+ 		{
+ 			IloExpr exprExpr(env);
+ 			for(int i=0;i<instance.m;i++)
+ 			{
+		 		for(int j=0; j < instance.n; j++)
+		 		{
+		 			exprExpr += var_t[i][j][k];
+		 		}
+		 	}
+	 		model.add(var_s[k] == exprExpr);
+	 		exprExpr.end();
+ 		}
+ 	}
+
+ 	IloExpr exprSumVarS(env);
+ 	for(int k=0; k < instance.n; k++)
+ 	{
+ 		exprSumVarS += var_s[k];
+ 	}
+ 	model.add(exprSumVarS == iNumDemandNodes);
+ 	exprSumVarS.end();
+
+
+
+
+	 /*
+	  * There must be exactly as many ingoing arcs to supply notes as ingoing arcs to
+	  * demand nodes and that as the number of demand nodes
+	  */
+
+	 
+
+//	 IloExpr toSupplySumExpr(env);
+//	 IloExpr toDemandSumExpr(env);
+//	 for(int k=0; k < instance.m; k++)
+//	 {
+//	 	for(int i=0;i<instance.n;i++)
+//	 	{
+//	 		for(int j=0; j< instance.n; j++)
+//	 		{
+//	 			if(instance.isSupplyNode(j))
+//	 				toSupplySumExpr += var_t[k][i][j];
+//	 			if(instance.isDemandNode(j))
+//	 				toDemandSumExpr += var_t[k][i][j];
+//	 		}
+//	 	}
+//	 }
+//	 model.add(toSupplySumExpr == iNumDemandNodes);
+//	 model.add(toDemandSumExpr == iNumDemandNodes);
+//	 toSupplySumExpr.end();
+//	 toDemandSumExpr.end();
+
 	/*
 	 * a supply node is not allowed to got to a supply node
 	 * a demand node is not allowed to got to a demand node

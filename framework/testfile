@@ -9,6 +9,6 @@ do
   for i in "${instances[@]}"
   do
     echo "Current instance: $i"
-    qsub -N test -b y -r y ./tcbvrp -f instances/"$i" -m "$m"
+    qsub -N testSupply -b y -r y -e /dev/null ./tcbvrp -f instances/"$i" -m "$m"
   done
 done

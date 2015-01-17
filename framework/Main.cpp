@@ -35,6 +35,7 @@ int main( int argc, char *argv[] )
 	// read instance
 	Instance instance( file );
 	// solve instance
+	cout << "Loaded Instance: " << file << endl;
 	tcbvrp_ILP ilp( instance, model_type);
 	ilp.solve();
 
